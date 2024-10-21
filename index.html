@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <input type="text" id="input" style="display: none;">
+    <button id="sendBtn" onclick="onClick()" style="display: none;">发送消息</button>
+    <input type="text" id="username">
+    <button id="createBtn" onclick="onClick()">创建用户</button>
+    <div id="chatBox"></div>
+    <script type="module">
+        import WebSocketManager from "./websocket.js";
+
+        let username = "";
+
+        /**
+         * 添加聊天记录
+         */
+        const appendCharText = (username, message) => {
+            const newDiv = document.createElement("div");
+            newDiv.innerHTML = `${username}: ${message}`;
+            const chatBox = document.getElementById("chatBox");
+            chatBox.appendChild(newDiv);
+        };
+
+        /**
+         * 接收消息并处理
+         */
+        const getMessage = (msg) => {
+            console.log(msg);
+            const data = JSON.parse(msg);
+            if (data.command === "createUser") {
+                username = data.message;
+            }
+            if (data.command === "chat") {
+                appendCharText(data.username, data.message);
+            }
+        };
+
+        var ws = new WebSocketManager('ws://localhost:8888', getMessage);
+        ws.start();
+
+        /**
+         * 发送消息
+         */
+        var charInput = document.getElementById('input');
+        var sendBtn = document.getElementById('sendBtn');
+        sendBtn.onclick = () => {
+            const message = charInput.value;
+            ws.sendMessage(JSON.stringify({
+                username,
+                message,
+                command: "chat",
+            }));
+            appendCharText(username, message);
+        };
+
+        /**
+         * 创建用户
+         */
+        var usernameInput = document.getElementById('username');
+        var createBtn = document.getElementById('createBtn');
+        createBtn.onclick = () => {
+            const message = usernameInput.value;
+            ws.sendMessage(JSON.stringify({
+                message,
+                command: "createUser",
+            }));
+            usernameInput.style.display = "none";
+            createBtn.style.display = "none";
+            charInput.style.display = "inline";
+            sendBtn.style.display = "inline-block";
+        };
+    </script>
+</body>
+
+</html>
